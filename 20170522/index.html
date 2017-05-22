@@ -59,15 +59,20 @@
 		*/
 
 		window.addEventListener("click",scale,true);
-
+		window.addEventListener("keydown",scale,true);
+		setInterval(scale,1000);
 		var iScale=1.0;
+		var pipe=[];
 		function scale(){
 			iScale+=iScale;
-			iScale=iScale>128?1.0:iScale;
-			wgl.vertexAttrib3f(aVP,Math.random(),Math.random(),Math.random());
-			wgl.vertexAttrib1f(aVPS,parseFloat(iScale.toFixed(1)));	
+			iScale=iScale>64?1.0:iScale;
+			pipe.push({scale:parseFloat(iScale.toFixed(1)),pos:[Math.random(),Math.random(),Math.random()]});
 			wgl.clear(wgl.COLOR_BUFFER_BIT);
-			wgl.drawArrays(wgl.POINTS,0,1);
+			pipe.forEach(function(item,i){
+				wgl.vertexAttrib3f(aVP,...item.pos);
+				wgl.vertexAttrib1f(aVPS,item.scale);
+				wgl.drawArrays(wgl.POINTS,0,1);
+			});	
 		}
 
 		function initShadersmy(gl,VS,FS) {
