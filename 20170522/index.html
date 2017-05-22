@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>初识webGL</title>
+</head>
+<body>
+	<canvas id="myPaint" width="600" height="400"></canvas>
+	<script>
+		//这个东西是基于canvas来实现3d图形绘制，所以要用到html5的canvas API，
+		//所以，兼容必须至少支持html5+canvas
+
+		// var ctx =document.getElementById("myPaint").getContext("2d");
+		// ctx.beginPath();
+		// ctx.fillStyle="rgba(0,0,255,0.4)";
+		// ctx.fillRect(40,40,100,100);
+		// ctx.closePath();
+
+		var canvas=document.getElementById("myPaint");
+		//获取canvas画板
+		var wgl=canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+		//设置wgl上下文，此处需要兼容处理，webgl在IE下无法建立wgl上下文环境，需要通过"experimental-webgl"声明
+		var VSHADER_SOURCE="attribute vec4 aVertexPosition; \n"+"attribute float aVertexPointSize; \n"+"void main() {\n"+" gl_Position=aVertexPosition;\n"+"gl_PointSize=aVertexPointSize;\n"+"}";
+		//设置顶点着色器*注意此处的vec4接受的参数必须是浮点型float，且gl_PointSize也必须接受一个浮点型，否则会报错
+		//gl_Position通过vec4这个函数设置的是着色器的顶点位置，vec4的四个参数分别代表了x,y,z轴,第四个设成1.0表示为
+		//齐次方程，有关齐次方程的解释可自行查找相关数学资料
+		//gl_PointSize设置的是着色点的大小。
+		var	FSHADER_SOURCE="void main() {\n"+"gl_FragColor=vec4(1.0,0.7,0.0,1.0);\n"+"}";
+		//设置片原着色器*注意此处的vec4接受的参数必须是浮点型float
+		//gl_FragColor设置着色点的颜色接受的值范围是0.0~1.0
+		initShadersmy(wgl,VSHADER_SOURCE,FSHADER_SOURCE)
+		//初始化着色器
+	  	var  aVP=wgl.getAttribLocation(wgl.program, "aVertexPosition");
+	  	//通过getAttribLocation获取到外部程序设置的对应变量，第一个参数为包含设置项的对象，
+	  	//是一个自定义属性，包含了顶点及片原的设置信息，第二个参数为外部程序设置项的变量名。
+	  	wgl.vertexAttrib3f(aVP,0.0,0.0,0.0);
+	  	//通过vertexAttrib?f函数来设置外部程序变量的值。？的值可以为1，2，3，4，分别对应个数
+		var  aVPS=wgl.getAttribLocation(wgl.program, "aVertexPointSize");
+	  	wgl.vertexAttrib1f(aVPS,1.0);
+	  	//练习，实际用法同上，只是取到不同的属性名字而已。注意vertexAttrib?f函数的应用要与外部程序变量的类型对应
+	  	//既然可以通过js来给赋值，那么是不是接下来轮到js疯狂的动态效果啦，哈哈，你高兴的太早了，哼！
+
+
+		wgl.clearColor(0,0,0,0.4);
+		//设置清除色，即作为画板的背景色，接受参数rgba,但是其值的范围是0.0~1.0而不是0~255需要注意且需注意的是
+		//此处接受的可以是浮点型float也可以是整形int
+		wgl.clear(wgl.COLOR_BUFFER_BIT);
+		//真正将画板设置背景色方法，通过wgl.COLOR_BUFFER_BIT取到上边设置的颜色，注意，wgl下的所有原生属性均以
+		//大写字母存在
+		//也可以用作绘制完毕通过此方法将上下文清空
+
+		wgl.drawArrays(wgl.POINTS,0,1);
+		//绘制一个点
+
+
+
+		/*
+			外部程序是强类型语言，要记得对应变量的声明和使用一定要按照声明的类型传递和设置。否则会死。
+		*/
+
+		window.addEventListener("click",scale,true);
+
+		var iScale=1.0;
+		function scale(){
+			iScale+=iScale;
+			iScale=iScale>128?1.0:iScale;
+			wgl.vertexAttrib3f(aVP,Math.random(),Math.random(),Math.random());
+			wgl.vertexAttrib1f(aVPS,parseFloat(iScale.toFixed(1)));	
+			wgl.clear(wgl.COLOR_BUFFER_BIT);
+			wgl.drawArrays(wgl.POINTS,0,1);
+		}
+
+		function initShadersmy(gl,VS,FS) {
+		  var fragmentShader = getShader(gl, FS,"fs");
+		  var vertexShader = getShader(gl, VS,"vs");
+		  // 创建着色器
+		  var shaderProgram = gl.createProgram();
+		  gl.attachShader(shaderProgram, vertexShader);
+		  gl.attachShader(shaderProgram, fragmentShader);
+
+		  gl.linkProgram(shaderProgram);
+		  
+		  // 如果创建着色器失败
+		  
+		  if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+		    alert("Unable to initialize the shader program.");
+		  }
+		  
+		  gl.useProgram(shaderProgram);
+		  gl.program=shaderProgram;
+		  
+		}
+
+		function getShader(gl,source,type) {
+  			var  shader;
+
+  			shader=type=="fs"?gl.createShader(gl.FRAGMENT_SHADER):gl.createShader(gl.VERTEX_SHADER);
+
+  			gl.shaderSource(shader, source);
+			gl.compileShader(shader);  
+
+			if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {  
+			      alert("An error occurred compiling the shaders: " + gl.getShaderInfoLog(shader));  
+			      return null;  
+			}
+			return shader;
+		}
+	</script>
+</body>
+</html>
